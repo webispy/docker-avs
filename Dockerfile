@@ -53,10 +53,19 @@ RUN mkdir /BUILD && cd /BUILD \
         -DGSTREAMER_MEDIA_PLAYER=ON  \
         -DPKCS11=OFF \
         -DCMAKE_BUILD_TYPE=DEBUG \
+        -DBUILD_TESTING=OFF \
         -DPORTAUDIO=ON \
             -DPORTAUDIO_INCLUDE_DIR=/usr/local/include \
             -DPORTAUDIO_LIB_PATH=/usr/local/lib/libportaudio.so \
     && make SampleApp -j6 install
+
+RUN mkdir /opt/avs && mkdir /opt/src \
+    && cp -a /BUILD/SampleApp/src/SampleApp /opt/avs/ \
+    && cp -a /SRC/tools/Install /opt/tools \
+    && cp -a /SRC/Integration /opt/src/Integration
+
+COPY config.json /opt/
+COPY startup.sh /opt/
 
 # -----------------------------------------------------------------------------
 
@@ -66,12 +75,8 @@ LABEL maintainer="webispy@gmail.com" \
       version="0.1" \
       description="avs-device-sdk sample app"
 
-COPY --from=builder /BUILD/SampleApp/src/SampleApp /opt/avs/
-COPY --from=builder /SRC/tools/Install /opt/tools
-COPY --from=builder /SRC/Integration /opt/src/Integration
 COPY --from=builder /usr/local /usr/local
-
-COPY config.json /opt/
+COPY --from=builder /opt /opt
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -83,17 +88,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gstreamer1.0-tools \
         libasound2-plugins \
         libgstreamer1.0-0 \
-        nghttp2 \
+        libnghttp2-14 \
         libssl1.1 \
         libsqlite3-0 \
         openssl \
         pkg-config \
         pulseaudio \
         python \
+        vim \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /opt/avs/Integration/database
 
-COPY startup.sh /usr/bin/
-ENTRYPOINT ["/usr/bin/startup.sh"]
+ENTRYPOINT ["/opt/startup.sh"]
 CMD ["/bin/bash"]
+
